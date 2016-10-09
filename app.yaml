@@ -1,0 +1,13 @@
+application: sunbacon-bot
+version: 1
+runtime: go
+api_version: go1
+
+handlers:
+- url: /task.*
+  script: _go_app
+  login: admin
+  secure: always
+- url: /.*
+  script: _go_app
+  secure: always

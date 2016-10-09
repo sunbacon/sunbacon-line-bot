@@ -1,2 +1,7 @@
+#secret env
+line.env
 # Google App Engine generated folder
 appengine-generated/
+# idea
+.idea/
+*.iml
