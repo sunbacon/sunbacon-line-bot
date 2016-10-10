@@ -1,29 +1,29 @@
 package bot
 
 import (
-	"strings"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/line/line-bot-sdk-go/linebot"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/googleapi/transport"
+	"google.golang.org/api/translate/v2"
+	"google.golang.org/api/vision/v1"
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/file"
+	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/taskqueue"
 	"google.golang.org/appengine/urlfetch"
-	"google.golang.org/appengine/log"
-	"net/http"
-	"os"
-	"google.golang.org/api/translate/v2"
-    "net/url"
-	"google.golang.org/api/vision/v1"
-	"golang.org/x/oauth2/google"
-	"golang.org/x/net/context"
-	"io/ioutil"
-	"time"
-	"math/rand"
-	"fmt"
 	"google.golang.org/cloud/storage"
-	"google.golang.org/appengine/file"
-	"google.golang.org/api/googleapi/transport"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"time"
 )
 
 var channelSecret, channelToken, translateApiKey string
@@ -33,8 +33,8 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-    channelSecret = os.Getenv("CHANNEL_SECRET")
-    channelToken = os.Getenv("CHANNEL_TOKEN")
+	channelSecret = os.Getenv("CHANNEL_SECRET")
+	channelToken = os.Getenv("CHANNEL_TOKEN")
 	apiKey = os.Getenv("TRANSLATE_API_KEY")
 	http.HandleFunc("/message", handleMessage)
 	http.HandleFunc("/task", handleTask)
@@ -63,7 +63,7 @@ func handleMessage(w http.ResponseWriter, r *http.Request) {
 			log.Errorf(c, "marshal:%v", err)
 		}
 		data := base64.StdEncoding.EncodeToString(j)
-		task := taskqueue.NewPOSTTask("/task", url.Values{"data":{data}})
+		task := taskqueue.NewPOSTTask("/task", url.Values{"data": {data}})
 		tasks[i] = task
 	}
 	taskqueue.AddMulti(c, tasks, "")
@@ -157,10 +157,10 @@ func handleTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func requestTranslateApi(c context.Context,source []string)(string, error) {
+func requestTranslateApi(c context.Context, source []string) (string, error) {
 	service, err := translate.New(&http.Client{
 		Transport: &transport.APIKey{
-			Key: translateApiKey,
+			Key:       translateApiKey,
 			Transport: &urlfetch.Transport{Context: c},
 		},
 	})
@@ -168,7 +168,7 @@ func requestTranslateApi(c context.Context,source []string)(string, error) {
 		return "", err
 	}
 
-	response, err := service.Translations.List(source,"ja").Context(c).Do()
+	response, err := service.Translations.List(source, "ja").Context(c).Do()
 	if err != nil {
 		return "", err
 	}
@@ -182,7 +182,7 @@ func requestTranslateApi(c context.Context,source []string)(string, error) {
 	return s, nil
 }
 
-func requestVisionApi(c context.Context,imgData []byte) ([]string ,error) {
+func requestVisionApi(c context.Context, imgData []byte) ([]string, error) {
 	enc := base64.StdEncoding.EncodeToString(imgData)
 	img := &vision.Image{Content: enc}
 	feature := &vision.Feature{
@@ -214,15 +214,15 @@ func requestVisionApi(c context.Context,imgData []byte) ([]string ,error) {
 	// Description : Score（％）
 	// の形に整形
 	result := []string{}
-	for _,annotation := range res.Responses[0].LabelAnnotations {
-		result = append(result, fmt.Sprintf("%s:%d％",annotation.Description, int(annotation.Score * 100.0)))
+	for _, annotation := range res.Responses[0].LabelAnnotations {
+		result = append(result, fmt.Sprintf("%s:%d％", annotation.Description, int(annotation.Score*100.0)))
 	}
 	return result, nil
 }
 
-func saveImage(c context.Context,imgData []byte) error{
+func saveImage(c context.Context, imgData []byte) error {
 	bucketName, err := file.DefaultBucketName(c)
-	objectName := fmt.Sprintf("s%d%d.jpg",time.Now().Unix(),rand.Intn(100000))
+	objectName := fmt.Sprintf("s%d%d.jpg", time.Now().Unix(), rand.Intn(100000))
 
 	if err != nil {
 		return err
@@ -246,45 +246,45 @@ func GetRandomText() string {
 	rand.Seed(time.Now().UnixNano())
 	i := rand.Intn(100)
 	switch i % 20 {
-		case 0:
+	case 0:
 		return "うーん"
-		case 1:
+	case 1:
 		return "つらい"
-		case 2:
+	case 2:
 		return "わかる"
-		case 3:
+	case 3:
 		return "わからず"
-		case 4:
+	case 4:
 		return "そんなことないよ"
-		case 5:
+	case 5:
 		return "かわいい"
-		case 6:
+	case 6:
 		return "つよそう"
-		case 7:
+	case 7:
 		return "それ"
-		case 8:
+	case 8:
 		return "すてき"
-		case 9:
+	case 9:
 		return "すき"
-		case 10:
+	case 10:
 		return "無職"
-		case 11:
+	case 11:
 		return "なんでやねん"
-		case 12:
+	case 12:
 		return "優勝！！！！"
-		case 13:
+	case 13:
 		return "準優勝"
-		case 14:
+	case 14:
 		return "ビール"
-		case 15:
+	case 15:
 		return "ボドゲ"
-		case 16:
+	case 16:
 		return "とは"
-		case 17:
+	case 17:
 		return "わからずの森"
-		case 18:
+	case 18:
 		return "しずかに"
-		case 19:
+	case 19:
 		return "にゃーん"
 	}
 	return "えええええ"
